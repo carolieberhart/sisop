@@ -46,6 +46,14 @@ int add_prioQ (int prio, TCB_t *TCB)
         else
             current = prio2;
     }
+    //vai até o fim da lista de prioridade
+    for(;current!=NULL;current==current->next)
+        prev=current;
+    
+    //adiciona o novo TCB no final
+    prev->next=TCB;
+    
+    return 1;
 }
 
 //Criar main thread
