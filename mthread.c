@@ -20,7 +20,7 @@ int add_prioQ (int prio, TCB_t *TCB)
         {
             prio0=TCB;
             return 1;
-        {
+        }
         else
             current = prio0;
     }
@@ -31,7 +31,7 @@ int add_prioQ (int prio, TCB_t *TCB)
         {
             prio1=TCB;
             return 1;
-        {
+        }
         else
             current = prio1;
     }
@@ -42,42 +42,45 @@ int add_prioQ (int prio, TCB_t *TCB)
         {
             prio2=TCB;
             return 1;
-        {
+        }
         else
             current = prio2;
     }
     else
         return -1;
-    
-    
+
+
     //vai até o fim da lista de prioridade
-    for(;current!=NULL;current==current->next)
+    for(;current!=NULL;current=current->next)
         prev=current;
-    
+
     //adiciona o novo TCB no final
     prev->next=TCB;
-    
+
     return 1;
 }
 
+
 //Pegar o primeiro TCB da fila de maior prioridade
-TCB_t mfifo()
+TCB_t* mfifo()
 {
+    TCB_t *temp;
     if(prio0!=NULL)
     {
+        temp=prio0;
         prio0=prio0->next;
-        return prio0;
     }
-    elseif(prio1!=NULL)
+    else if(prio1!=NULL)
     {
+        temp=prio1;
         prio1=prio1->next;
-        return prio1;
     }
     else
     {
+        temp=prio2;
         prio2 = prio2->next;
-        return prio2;
     }
+    return temp;
 }
 
 
