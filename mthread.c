@@ -2,9 +2,9 @@
 #include <mthread.h>
 #include <mdata.h>
 
-
-
-
+//Filas de prioridade
+static TCB_t prio0=NULL, prio1=NULL,prio2=NULL;
+static int ctid=0;
 
 
 /*Adicionar na fila de prioridades*/
