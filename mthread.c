@@ -23,8 +23,8 @@ int add_prioQ (int prio, TCB_t *TCB)
     }
 }
 
-/*Criar main thread*/
-int create_main_t()
+//Criar main thread
+int mmain()
 {
 
 }
@@ -32,9 +32,9 @@ int create_main_t()
 /*Criaçao de uma thread*/
 int mcreate (int prio, void *(*start)(void *), void *arg);
 {
-    /*testa se a main thread ainda não foi criada, cria se for o caso e retorna -1 caso haja problemas na criação da mesma*/
-    if (main_created==0)
-            if(create_main_t()==-1)
+    //testa se a main thread ainda não foi criada, cria se for o caso e retorna -1 caso haja problemas na criação da mesma
+    if (ctid==0)
+            if(mmain()==-1) //testa se a crianção da main ocorreu corretamente
                 return -1;
 
 
