@@ -56,6 +56,28 @@ int add_prioQ (int prio, TCB_t *TCB)
     return 1;
 }
 
+//Pegar o primeiro TCB da fila de maior prioridade
+TCB_t mfifo()
+{
+    if(prio0!=NULL)
+    {
+        prio0=prio0->next;
+        return prio0;
+    }
+    elseif(prio1!=NULL)
+    {
+        prio1=prio1->next;
+        return prio1;
+    }
+    else
+    {
+        prio2 = prio2->next;
+        return prio2;
+    }
+}
+
+
+
 //Criar main thread
 int mmain()
 {
