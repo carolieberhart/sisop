@@ -11,22 +11,47 @@ static int ctid=0;
 /*Adicionar na fila de prioridades*/
 int add_prioQ (int prio, TCB_t *TCB)
 {
-    TCB_t prev, current;
-    //Prioridade alta
+    TCB_t *prev, *current;
+    prev=NULL;
+    //prioridade alta
     if(prio==0)
     {
-        current=prio_0;
-        while(current.next!=NULL)
+        if (prio0==NULL)
         {
-
-        }
+            prio0=TCB;
+            return 1;
+        {
+        else
+            current = prio0;
+    }
+    //prioridade media
+    if(prio==1)
+    {
+        if (prio1==NULL)
+        {
+            prio1=TCB;
+            return 1;
+        {
+        else
+            current = prio1;
+    }
+    //prioridade baixa
+    if(prio==2)
+    {
+        if (prio2==NULL)
+        {
+            prio2=TCB;
+            return 1;
+        {
+        else
+            current = prio2;
     }
 }
 
 //Criar main thread
 int mmain()
 {
-
+    
 }
 
 /*Criaçao de uma thread*/
