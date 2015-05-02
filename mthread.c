@@ -8,7 +8,7 @@ static TCB_t *prio0=NULL, *prio1=NULL, *prio2=NULL;
 static int ctid=0;
 
 
-/*Adicionar na fila de prioridades*/
+//Adicionar na fila de prioridades [TESTADO]
 int add_prioQ (int prio, TCB_t *TCB)
 {
     TCB_t *prev, *current;
@@ -61,7 +61,7 @@ int add_prioQ (int prio, TCB_t *TCB)
 }
 
 
-//Pegar o primeiro TCB da fila de maior prioridade
+//Pegar o primeiro TCB da fila de maior prioridade [TESTADO]
 TCB_t* mfifo()
 {
     TCB_t *temp;
