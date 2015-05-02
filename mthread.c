@@ -25,7 +25,7 @@ int add_prioQ (int prio, TCB_t *TCB)
             current = prio0;
     }
     //prioridade media
-    if(prio==1)
+    else if(prio==1)
     {
         if (prio1==NULL)
         {
@@ -36,7 +36,7 @@ int add_prioQ (int prio, TCB_t *TCB)
             current = prio1;
     }
     //prioridade baixa
-    if(prio==2)
+    else if(prio==2)
     {
         if (prio2==NULL)
         {
@@ -46,6 +46,10 @@ int add_prioQ (int prio, TCB_t *TCB)
         else
             current = prio2;
     }
+    else
+        return -1;
+    
+    
     //vai até o fim da lista de prioridade
     for(;current!=NULL;current==current->next)
         prev=current;
@@ -128,7 +132,7 @@ int mcreate (int prio, void *(*start)(void *), void *arg);
     ctid++;
     
     /*Inclusão do TCB na fila adequada*/
-
+    add_prioQ(prio, TCB);
     /*Criada a thread com sucesso, retorna o id da mesma*/
     return TCB.tid;
 }
