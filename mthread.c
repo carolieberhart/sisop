@@ -4,6 +4,7 @@
 
 //Filas de prioridade
 static TCB_t prio0=NULL, prio1=NULL,prio2=NULL;
+//Thread ID atual
 static int ctid=0;
 
 
