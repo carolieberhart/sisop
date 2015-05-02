@@ -81,6 +81,21 @@ TCB_t mfifo()
 //Criar main thread
 int mmain()
 {
+    //Criar o TCB da main
+     TCB_t* TCB = (TCB_t*)  malloc(sizeof(TCB_t));
+     
+     //inicialização do TCB da thread main
+     TCB->tid=0;
+     TCB->state=1;
+     TCB->prio=0;
+     getcontext(TCB->context);
+     TCB->next=NULL;
+     TCB->prev=NULL;
+     
+     
+     
+     //atualiza os IDs disponíveis
+     ctid++;
     
 }
 
@@ -93,23 +108,25 @@ int mcreate (int prio, void *(*start)(void *), void *arg);
                 return -1;
 
 
-    /*declara o TCB*/
-    TCB_t *TCB;
-
+   
     /*Teste se a prioridade é válida, caso não seja, retorna -1*/
     if(prio!=0 && prio!=1 && prio!=2)
         return -1;
 
     /*Alocação do TCB*/
-    TCB = malloc(sizeof(TCB_t));
+    TCB_t* TCB = (TCB_t*)  malloc(sizeof(TCB_t));
 
     /*Inicialização do TCB*/
-    TCB.state = 1; //Thread é criada no estado apto
-    TCB.prio = prio;
-    //falta o contexto aqui
-    TCB.prev=NULL;
-    TCB.next=NULL;
+    TCB->tid=ctid;
+    TCB->state = 1; //Thread é criada no estado apto
+    TCB->prio = prio;
+    getcontext(TCB->context);
+    TCB->prev=NULL;
+    TCB->next=NULL;
 
+    //atualiza o ctid
+    ctid++;
+    
     /*Inclusão do TCB na fila adequada*/
 
     /*Criada a thread com sucesso, retorna o id da mesma*/
