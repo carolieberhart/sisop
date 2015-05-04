@@ -3,9 +3,16 @@
 //OBSERVAÇÃO
 //eu coloquei a verificação da existencia da main e a chamada da criação dela em todas as funções, mas nao sei se isso seria correto :)
 
+//Estruturas
 
+typedef struct b_w8d
+{
+    int waiting; //id da thread que está esperando
+    int waited; //id da thread sendo esperada
+    struct b_w8d *next;
+}t_wait;
 
-
+//VARIAVEIS
 
 //Filas de prioridade
 static TCB_t *prio0=NULL, *prio1=NULL, *prio2=NULL;
@@ -15,6 +22,112 @@ static int ctid=0;
 
 //TCB da thread em execução
 static TCB_t *executing_thread=NULL;
+
+//Fila de threads bloqueadas
+static TCB_t *blocked_threads=NULL;
+
+//Fila de ids de threads q já possuem uma thread esperando por elas
+static t_wait *being_waited=NULL;
+
+
+//Funções
+
+//Verifica se a thread já está sendo esperada por outra thread. Retorno: 0=não há thread esperanod, -1=há thread esérando
+int verify_wait_list(int tid)
+{
+    t_wait *prev, *current;
+    prev=NULL;
+
+    if(being_waited==NULL)
+        return 0;
+    else //caso não esteja
+    {
+        current=being_waited;
+
+        for(;current!=NULL;current=current->next)
+        {
+            if(current->tid==tid) //thread está na lista de threads sendo esperadas
+                return -1;
+        }
+
+    return 0;
+    }
+}
+
+
+//adiciona um TCB a fila de threads bloqueadas
+int add_blockedQ(TCB_t *TCB)
+{
+    TCB_t *prev, *current;
+    prev=NULL;
+
+    //verifica se a fila de bloqueadas está vazia
+    if(blocked_threads==NULL)
+    {
+        blocked_threads=TCB;
+        return 0;
+    }
+    else //caso não esteja
+    {
+        current=blocked_threads;
+
+        for(;current!=NULL;current=current->next)
+            prev=current;
+
+        //adiciona o novo TCB no final
+        prev->next=TCB;
+
+        return 0;
+    }
+}
+
+//adiciona um tid a fila de threads sendo esperadas
+int add_waitedQ(int waited, int waiting)
+{
+    t_wait *prev, *current;
+    prev=NULL;
+
+    //inicializa o novo item da fila
+    t_wait* wthread = (t_wait*)  malloc(sizeof(t_wait));
+    wthread->next=NULL;
+    wthread->waited=waited;
+    wthread->waiting=waiting;
+
+    //verifica se a fila de bloqueadas está vazia
+    if(t_wait==NULL)
+    {
+        being_waited=wthread;
+        return 0;
+    }
+    else //caso não esteja
+    {
+        current=being_waited;
+
+        for(;current!=NULL;current=current->next)
+            prev=current;
+
+        //adiciona o novo TCB no final
+        prev->next=wthread;
+
+        return 0;
+    }
+}
+
+//procura um thread ID nas filas de proridades. retorno 0=achou, -1=não achou
+int search_blockedQ (int tid)
+{
+    TCB_t *current;
+    //procura na lista de prioridade 0
+    for(current=blocked_threads;current!=NULL;current=current->next)
+    {
+        if(current->tid==tid)
+            return 0;
+    }
+
+    //não encontrou o tid
+    return -1;
+}
+
 
 //Adicionar na fila de prioridades [TESTADO]
 int add_prioQ (int prio, TCB_t *TCB)
@@ -27,7 +140,7 @@ int add_prioQ (int prio, TCB_t *TCB)
         if (prio0==NULL)
         {
             prio0=TCB;
-            return 1;
+            return 0;
         }
         else
             current = prio0;
@@ -38,7 +151,7 @@ int add_prioQ (int prio, TCB_t *TCB)
         if (prio1==NULL)
         {
             prio1=TCB;
-            return 1;
+            return 0;
         }
         else
             current = prio1;
@@ -49,7 +162,7 @@ int add_prioQ (int prio, TCB_t *TCB)
         if (prio2==NULL)
         {
             prio2=TCB;
-            return 1;
+            return 0;
         }
         else
             current = prio2;
@@ -67,6 +180,36 @@ int add_prioQ (int prio, TCB_t *TCB)
 
     return 0;
 }
+
+//procura um thread ID nas filas de proridades. retorno 0=achou, -1=não achou
+int search_prioQs (int tid)
+{
+    TCB_t *current;
+    //procura na lista de prioridade 0
+    for(current=prio0;current!=NULL;current=current->next)
+    {
+        if(current->tid==tid)
+            return 0;
+    }
+    //procura na lista de prioridade 1
+    for(current=prio1;current!=NULL;current=current->next)
+    {
+        if(current->tid==tid)
+            return 0;
+    }
+    //procura na lista de prioridade 2;
+    for(current=prio2;current!=NULL;current=current->next)
+    {
+        if(current->tid==tid)
+            return 0;
+    }
+
+    //não encontrou o tid em nenhuma fila
+    return -1;
+}
+
+
+
 
 
 //Pegar o primeiro TCB da fila de maior prioridade [TESTADO]
@@ -177,6 +320,7 @@ int myield(void);
     //pega o context e adiciona na fila de prioridades correspondente, ao mesmo tempo que testa pra ver se isso ocorreu com sucesso
     if(getcontext(executing_thread->context)==0 && add_prioQ(executing_thread->prio, executing_thread)==0)
     {
+        //livra o executing thread do TCB que estava lá antes da chamada de myield
         executing_thread=NULL;
         return 0;
     }
@@ -191,6 +335,41 @@ int mwait(int tid);
     if (ctid==0)
             if(mmain()==-1) //testa se a crianção da main ocorreu corretamente
                 return -1;
+
+    //checa se o tid não é do próprio processo
+    if(tid==executing_thread->tid)
+        return -1;
+
+    //verifica se o número do tid é válido
+    if(tid>=0 && tid<=ctid)
+    {
+        //verifica se o já não está sendo esperado por outro processo
+        if(verify_wait_list(tid)==0)
+        {
+            //verifica se o processo existe na fila de aptos
+            if(search_prioQs(tid)==0 || search_blockedQ(tid)==0)
+            {
+                //atualiza o contexto da thread
+                getcontext(executing_thread->context);
+                //bloqueia a thread
+                if(add_blockedQ(executing_thread)!=0)
+                    return -1;
+                //adiciona o thrad id à lista de threads sendo esperadas
+                if(add_waitedQ(tid, executing_thread->tid)!=0)
+                    return -1;
+                //libera a thread em execução
+                executing_thread=NULL;
+                return 0;
+            }
+            else //thread a ser esperada não foi encontrada em nenyma fila
+                return -1;
+        }
+        else //thread já está sendo esperada por outra thread
+            return -1;
+    }
+    else //tid inválido
+        return -1;
+
 }
 
 /*Exclusao mutua*/
@@ -220,7 +399,7 @@ int munlock (mmutex_t *mtx);
                 return -1;
 }
 
-//função que controla a execução das threads de acordo com as filas e estados
+//função que controla a execução das threads de acordo com as filas e estados, nao sei se é necessaria :s
 int mdispatcher ()
 {
     while(1)
