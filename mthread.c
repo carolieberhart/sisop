@@ -1,18 +1,19 @@
 #include <mthread.h>
 #include <mdata.h>
+#unclide <ucontext.h>
 //OBSERVAÇÃO
 //eu coloquei a verificação da existencia da main e a chamada da criação dela em todas as funções, mas nao sei se isso seria correto :)
 
-//Estruturas
+//***ESTRUTURAS***
 
 typedef struct b_w8d
 {
     int waiting; //id da thread que está esperando
     int waited; //id da thread sendo esperada
     struct b_w8d *next;
-}t_wait;
+} t_wait;
 
-//VARIAVEIS
+//***VARIAVEIS***
 
 //Filas de prioridade
 static TCB_t *prio0=NULL, *prio1=NULL, *prio2=NULL;
@@ -29,8 +30,11 @@ static TCB_t *blocked_threads=NULL;
 //Fila de ids de threads q já possuem uma thread esperando por elas
 static t_wait *being_waited=NULL;
 
+//contexto do escalonador
+ucontext_t sched_context;
 
-//Funções
+
+//***funções***
 
 //Verifica se a thread já está sendo esperada por outra thread. Retorno: 0=não há thread esperanod, -1=há thread esérando
 int verify_wait_list(int tid)
@@ -44,13 +48,13 @@ int verify_wait_list(int tid)
     {
         current=being_waited;
 
-        for(;current!=NULL;current=current->next)
+        for(; current!=NULL; current=current->next)
         {
             if(current->tid==tid) //thread está na lista de threads sendo esperadas
                 return -1;
         }
 
-    return 0;
+        return 0;
     }
 }
 
@@ -71,7 +75,7 @@ int add_blockedQ(TCB_t *TCB)
     {
         current=blocked_threads;
 
-        for(;current!=NULL;current=current->next)
+        for(; current!=NULL; current=current->next)
             prev=current;
 
         //adiciona o novo TCB no final
@@ -103,7 +107,7 @@ int add_waitedQ(int waited, int waiting)
     {
         current=being_waited;
 
-        for(;current!=NULL;current=current->next)
+        for(; current!=NULL; current=current->next)
             prev=current;
 
         //adiciona o novo TCB no final
@@ -118,7 +122,7 @@ int search_blockedQ (int tid)
 {
     TCB_t *current;
     //procura na lista de prioridade 0
-    for(current=blocked_threads;current!=NULL;current=current->next)
+    for(current=blocked_threads; current!=NULL; current=current->next)
     {
         if(current->tid==tid)
             return 0;
@@ -172,7 +176,7 @@ int add_prioQ (int prio, TCB_t *TCB)
 
 
     //vai até o fim da lista de prioridade
-    for(;current!=NULL;current=current->next)
+    for(; current!=NULL; current=current->next)
         prev=current;
 
     //adiciona o novo TCB no final
@@ -186,19 +190,19 @@ int search_prioQs (int tid)
 {
     TCB_t *current;
     //procura na lista de prioridade 0
-    for(current=prio0;current!=NULL;current=current->next)
+    for(current=prio0; current!=NULL; current=current->next)
     {
         if(current->tid==tid)
             return 0;
     }
     //procura na lista de prioridade 1
-    for(current=prio1;current!=NULL;current=current->next)
+    for(current=prio1; current!=NULL; current=current->next)
     {
         if(current->tid==tid)
             return 0;
     }
     //procura na lista de prioridade 2;
-    for(current=prio2;current!=NULL;current=current->next)
+    for(current=prio2; current!=NULL; current=current->next)
     {
         if(current->tid==tid)
             return 0;
@@ -240,32 +244,32 @@ TCB_t* mfifo()
 int mmain()
 {
     //Criar o TCB da main
-     TCB_t* TCB = (TCB_t*)  malloc(sizeof(TCB_t));
+    TCB_t* TCB = (TCB_t*)  malloc(sizeof(TCB_t));
 
-     //inicialização do TCB da thread main
-     TCB->tid=0;
-     TCB->state=0;
-     TCB->prio=0;
+    //inicialização do TCB da thread main
+    TCB->tid=0;
+    TCB->state=0;
+    TCB->prio=0;
 
-     if(getcontext(TCB->context)==-1) //se ocorrer erro na obtenção do contexto
-     {
-         free(TCB);
-         return -1;
-     }
+    if(getcontext(TCB->context)==-1) //se ocorrer erro na obtenção do contexto
+    {
+        free(TCB);
+        return -1;
+    }
 
-     TCB->next=NULL;
-     TCB->prev=NULL;
+    TCB->next=NULL;
+    TCB->prev=NULL;
 
-     //atualiza os IDs disponíveis, para sinalizar que a main thread já foi criada.
-     ctid++;
+    //atualiza os IDs disponíveis, para sinalizar que a main thread já foi criada.
+    ctid++;
 
-     //atualiza o estado para apto
-     TCB->state=1;
+    //atualiza o estado para apto
+    TCB->state=1;
 
-     //adicionando o TCB da main na fila de prioridades
-     if(add_prioQ(TCB, 0)==0)
+    //adicionando o TCB da main na fila de prioridades
+    if(add_prioQ(TCB, 0)==0)
         return 0; //criado com sucesso
-     else
+    else
         return -1;
 }
 
@@ -274,8 +278,8 @@ int mcreate (int prio, void *(*start)(void *), void *arg);
 {
     //testa se a main thread ainda não foi criada, cria se for o caso e retorna -1 caso haja problemas na criação da mesma
     if (ctid==0)
-            if(mmain()==-1) //testa se a crianção da main ocorreu corretamente
-                return -1;
+        if(mmain()==-1) //testa se a crianção da main ocorreu corretamente
+            return -1;
 
 
 
@@ -312,8 +316,8 @@ int myield(void);
 {
     //testa se a main thread ainda não foi criada, cria se for o caso e retorna -1 caso haja problemas na criação da mesma
     if (ctid==0)
-            if(mmain()==-1) //testa se a crianção da main ocorreu corretamente
-                return -1;
+        if(mmain()==-1) //testa se a crianção da main ocorreu corretamente
+            return -1;
 
     //muda o estado da thread para apto
     executing_thread->state=1;
@@ -333,8 +337,8 @@ int mwait(int tid);
 {
     //testa se a main thread ainda não foi criada, cria se for o caso e retorna -1 caso haja problemas na criação da mesma
     if (ctid==0)
-            if(mmain()==-1) //testa se a crianção da main ocorreu corretamente
-                return -1;
+        if(mmain()==-1) //testa se a crianção da main ocorreu corretamente
+            return -1;
 
     //checa se o tid não é do próprio processo
     if(tid==executing_thread->tid)
@@ -377,8 +381,8 @@ int mmutex_init (mmutex_t *mtx);
 {
     //testa se a main thread ainda não foi criada, cria se for o caso e retorna -1 caso haja problemas na criação da mesma
     if (ctid==0)
-            if(mmain()==-1) //testa se a crianção da main ocorreu corretamente
-                return -1;
+        if(mmain()==-1) //testa se a crianção da main ocorreu corretamente
+            return -1;
 }
 
 /*Entrada na seçao critica*/
@@ -386,8 +390,8 @@ int mlock (mmutex_t *mtx);
 {
     //testa se a main thread ainda não foi criada, cria se for o caso e retorna -1 caso haja problemas na criação da mesma
     if (ctid==0)
-            if(mmain()==-1) //testa se a crianção da main ocorreu corretamente
-                return -1;
+        if(mmain()==-1) //testa se a crianção da main ocorreu corretamente
+            return -1;
 }
 
 /*Termino da execuçao da seçao critica*/
@@ -395,28 +399,40 @@ int munlock (mmutex_t *mtx);
 {
     //testa se a main thread ainda não foi criada, cria se for o caso e retorna -1 caso haja problemas na criação da mesma
     if (ctid==0)
-            if(mmain()==-1) //testa se a crianção da main ocorreu corretamente
-                return -1;
+        if(mmain()==-1) //testa se a crianção da main ocorreu corretamente
+            return -1;
 }
 
-//função que controla a execução das threads de acordo com as filas e estados, nao sei se é necessaria :s
-int mdispatcher ()
+//função que controla a execução das threads. Se param = 0 significa que é a primeira chamada, então so seta o contexto a var global
+int mdispatcher(int param)
 {
+    if(param==0)
+    {
+        if(getcontext(sched_context)==0)
+            return 0;
+        else
+            return -1;
+    }
+    else
+    {
+        setcontext(sched_con)
+    }
+    setcontext(sched_context);
     while(1)
-        {
-            //usa a função fifo para saber qual thread executar
+    {
+        //usa a função fifo para saber qual thread executar
 
-            //executa a thread
+        //executa a thread
 
-            //recebe o resultado: block ou termino
+        //recebe o resultado: block ou termino
 
-            //se for termino consulta a lista de bloqueadas para ver se alguma thread esperava aquele termino, se sim, move para a fila de aptos
+        //se for termino consulta a lista de bloqueadas para ver se alguma thread esperava aquele termino, se sim, move para a fila de aptos
 
 
-            //só vai retornar quando todas threads forem finalizadas e as filas estiverem todas vazias!!!
-            if(prio0==NULL && prio1==NULL && prio2==NULL) //talvez falte testar pra ver se não tem nenhum processo bloqueado
-                return 0;
-        }
+        //só vai retornar quando todas threads forem finalizadas e as filas estiverem todas vazias!!!
+        if(prio0==NULL && prio1==NULL && prio2==NULL && blocked_threads==NULL && being_waited==NULL && executing_thread==NULL) //talvez falte testar pra ver se não tem nenhum processo bloqueado
+            return 0;
+    }
 
 
 }
