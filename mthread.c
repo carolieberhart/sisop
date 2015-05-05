@@ -40,7 +40,7 @@ int ctid=0;
 TCB_t *executing_thread=NULL;
 
 //Fila de threads bloqueadas
-//TCB_t *blocked_threads=NULL;
+TCB_t *blocked_threads=NULL;
 
 //Fila de ids de threads q já possuem uma thread esperando por elas
 WAIT_t *being_waited=NULL;
@@ -88,6 +88,10 @@ int WAIT_remove(int tid)
 //Adiciona na lista.
 int WAIT_add(WAIT_t *WAIT)
 {
+	//Adiciona na fila de bloqueados
+	if(TCB_enqueue(blocked_threads, WAIT->waiting) != 0)
+		return -1;
+	
 	//Verifica se a fila está vazia.
     if(being_waited == NULL)
     {
@@ -101,7 +105,6 @@ int WAIT_add(WAIT_t *WAIT)
         return 0;
     }
 }
-
 
 //Verifica se um elemento existe em uma fila encadeada pelo seu tid (0 se encontrou, -1 se não encontrou)
 int TCB_contains(TCB_t *queue, int tid)
@@ -163,6 +166,28 @@ int TCB_enqueue(TCB_t *queue, TCB_t *TCB)
     }
 }
 
+//Remove um TCB da lista. retorna NULL caso a lista esteja vazia.
+TCB_t* TCB_remove(TCB_t *queue, int tid)
+{
+	TCB_t *current, *prev;
+	
+	current = queue;
+	
+    //Procura na queue
+	while(current != NULL)
+	{
+		if(current->tid == tid)
+		{
+			prev->next = current->next
+			return current;
+		}
+		prev = current;
+		current = current->next;
+	}
+	
+	return current;
+}
+
 //Adicionar na fila de prioridades [TESTADO]
 int add_prioQ (TCB_t *TCB)
 {
@@ -205,8 +230,6 @@ TCB_t* mfifo()
 	else
 		return NULL;
 }
-
-
 
 //Criar main thread
 int mmain()
@@ -318,18 +341,28 @@ int mwait(int tid)
         if(WAIT_contains(tid)==0)
         {
             //verifica se o processo existe na fila de aptos
-            if(search_prioQs(tid) || search_blockedQ(tid))
+            if(search_prioQs(tid) || TCB_contains(blocked_threads, tid))
             {
                 //atualiza o contexto da thread
                 getcontext(&executing_thread->context);
-                //bloqueia a thread
-                //if(TCB_enqueue(blocked_threads, executing_thread) != 1)
-                  //  return -1;
+				
+				//inicializa o novo item da fila
+				WAIT_t* wthread = (WAIT_t*)  malloc(sizeof(WAIT_t));
+				wthread->next=NULL;
+				wthread->waited=tid;
+				wthread->waiting=executing_thread;
+				
                 //adiciona o thrad id à lista de threads sendo esperadas
-                if(add_waitedQ(tid, executing_thread->tid)!=0)
-                    return -1;
+				if(WAIT_add(wthread) != 0)
+					return -1;
+				
                 //libera a thread em execução
                 executing_thread=NULL;
+				
+				//--------------
+				//--DISPATCHER--
+				//--------------
+				
                 return 0;
             }
             else //thread a ser esperada não foi encontrada em nenyma fila
