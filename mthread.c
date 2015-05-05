@@ -68,7 +68,7 @@ int WAIT_contains(int tid)
 //Procura por threads que estão bloqueadas por esta tid e move para a fila de aptos. retorna 0 se existia e -1 se não.
 int WAIT_remove(int tid)
 {
-	WAIT_t *current;
+	WAIT_t *current, *prev;
 	current = being_waited;
 	
     //Procura na queue
@@ -76,9 +76,12 @@ int WAIT_remove(int tid)
 	{
 		if(current->waited == tid)
 		{
+			prev->next = current->next;
+			TCB_remove(blocked_threads, tid);
 			TCB_enqueue(current->waiting);
 			return 0;
 		}
+		prev = current;
 		current = current->next;
 	}
 	
