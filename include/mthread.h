@@ -1,16 +1,16 @@
 /*
- * mthread.h: arquivo de inclus√£o com os prot√≥tipos das fun√ß√µes a serem
- *            implementadas na realiza√ß√£o do trabalho.
+ * mthread.h: arquivo de inclus„o com os protÛtipos das funÁıes a serem
+ *            implementadas na realizaÁ„o do trabalho.
  *
- * N√ÉO MODIFIQUE ESTE ARQUIVO.
+ * N√O MODIFIQUE ESTE ARQUIVO.
  *
- * VERS√ÉO 1 - 24/03/2015
+ * VERS√O 1 - 24/03/2015
  */
 #ifndef __mthread__
 #define __mthread__
 
 typedef struct mutex {
-	int	flag; 					// indica se o mutex foi adquirido ou n√£o (0: livre; 1: ocupado)
+	int	flag; 					// indica se o mutex foi adquirido ou n„o (0: livre; 1: ocupado)
 	struct TCB	*first, *last; 	// ponteiros para lista de threads bloqueadas no mutex
 } mmutex_t;
 

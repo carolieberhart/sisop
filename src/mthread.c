@@ -1,29 +1,29 @@
 #include <stdlib.h>
 #include <ucontext.h>
-#include "mthread.h"
-#include "mdata.h"
+#include "../include/mthread.h"
+#include "../include/mdata.h"
 
-//VARIÃVEIS
+//VARIÁVEIS
 
-//Filas de prioridade: 0=alta, 1=mÃ©dia, 2=baixa (juntas compÃµes a fila de aptos)
+//Filas de prioridade: 0=alta, 1=média, 2=baixa (juntas compões a fila de aptos)
 TCB_t *prio0=NULL, *prio1=NULL, *prio2=NULL;
 
 //Thread ID atual (incrementa cada vez q cria uma thread)
 int ctid=0;
 
-//TCB da thread em execuÃ§Ã£o
+//TCB da thread em execução
 TCB_t *executing_thread=NULL;
 
 //Fila de threads bloqueadas
 TCB_t *blocked_threads=NULL;
 
-//Fila de ids de threads q jÃ¡ possuem uma thread esperando por elas
+//Fila de ids de threads q já possuem uma thread esperando por elas
 WAIT_t *being_waited=NULL;
 
-//Verificador de inicializaÃ§Ã£o da biblioteca
+//Verificador de inicialização da biblioteca
 static bool lib_init=FALSE;
 
-//Contexto de tÃ©rmino das threads
+//Contexto de término das threads
 ucontext_t *retfunction=NULL;
 
 //Contexto do escalonador
@@ -32,9 +32,9 @@ ucontext_t *scheduler_context=NULL;
 
 
 
-//FUNÃ‡Ã•ES DE VERIFICAÃ‡ÃƒO DE THREADS SENDO ESPERADAS
+//FUNÇÕES DE VERIFICAÇÃO DE THREADS SENDO ESPERADAS
 
-//Verifica se jÃ¡ existe uma thread que espera por esse tid. Retorno: 0=encontrou, -1=nÃ£o encontrou
+//Verifica se já existe uma thread que espera por esse tid. Retorno: 0=encontrou, -1=não encontrou
 int WAIT_contains(int tid)
 {
     WAIT_t *current;
@@ -42,7 +42,7 @@ int WAIT_contains(int tid)
 
     if(current==NULL) //Fila vazia
         return -1;
-    else //Fila nÃ£o vazia
+    else //Fila não vazia
     {
         while(current!=NULL)
         {
@@ -54,7 +54,7 @@ int WAIT_contains(int tid)
     return -1;
 }
 
-//Procura pela thread que estÃ¡ bloqueada por uma thread especifica (tio) e move-a para a fila de aptos. Retorno: 0=thread existia e foi movida e -1=thyread nÃ£o existia ou thread nÃ£o foi movida.
+//Procura pela thread que está bloqueada por uma thread especifica (tio) e move-a para a fila de aptos. Retorno: 0=thread existia e foi movida e -1=thyread não existia ou thread não foi movida.
 int WAIT_remove(int tid)
 {
     WAIT_t *current, *prev;
@@ -62,7 +62,7 @@ int WAIT_remove(int tid)
 
     if(current==NULL) //Fila vazia
         return -1;
-    else //Fila nÃ£o vazia
+    else //Fila não vazia
     {
         while(current != NULL)
         {
@@ -70,15 +70,7 @@ int WAIT_remove(int tid)
             {
                 prev->next = current->next;
                 TCB_remove(blocked_threads, tid);
-                if((current->waiting)->prio==0)
-                    if(TCB_enqueue(prio0,current->waiting)==0)
-                        return 0;
-                    else if((current->waiting)->prio==1)
-                        if(TCB_enqueue(prio1,current->waiting)==0)
-                            return 0;
-                        else if((current->waiting)->prio==2)
-                            if(TCB_enqueue(prio2,current->waiting)==0)
-                                return 0;
+                add_prioQ(current->waiting);
             }
             prev = current;
             current = current->next;
@@ -95,13 +87,13 @@ int WAIT_add(WAIT_t *WAIT)
     if(TCB_enqueue(blocked_threads, WAIT->waiting) != 0)
         return -1;
 
-    //Verifica se a fila estÃ¡ vazia.
+    //Verifica se a fila está vazia.
     if(being_waited == NULL)
     {
         being_waited=WAIT;
         return 0;
     }
-    else //caso nÃ£o esteja
+    else //caso não esteja
     {
         WAIT->next = being_waited;
         being_waited = WAIT;
@@ -109,9 +101,9 @@ int WAIT_add(WAIT_t *WAIT)
     }
 }
 
-//FUNÃ‡Ã•ES DE MANEJAMENTO DAS FILAS DE APTOS E DE BLOQUEADOS
+//FUNÇÕES DE MANEJAMENTO DAS FILAS DE APTOS E DE BLOQUEADOS
 
-//Verifica se um elemento existe em uma fila encadeada utilizando seu tid. Retorno: 0=encontrou, -1=nÃ£o encontrou
+//Verifica se um elemento existe em uma fila encadeada utilizando seu tid. Retorno: 0=encontrou, -1=não encontrou
 int TCB_contains(TCB_t *aqueue, int tid)
 {
     TCB_t *current;
@@ -120,7 +112,7 @@ int TCB_contains(TCB_t *aqueue, int tid)
 
     if(current==NULL) //Fila vazia
         return -1;
-    else //Fila nÃ£o vazia
+    else //Fila não vazia
     {
         while(current != NULL)
         {
@@ -132,7 +124,7 @@ int TCB_contains(TCB_t *aqueue, int tid)
     return -1;
 }
 
-//Retira e retorna o TCB do primeiro elemento da FIFO. Retorno: TCB=se a fila nÃ£o estava vazia, NULL=fila estava vazia.
+//Retira e retorna o TCB do primeiro elemento da FIFO. Retorno: TCB=se a fila não estava vazia, NULL=fila estava vazia.
 TCB_t* TCB_dequeue(TCB_t *aqueue)
 {
     TCB_t *first;
@@ -144,7 +136,7 @@ TCB_t* TCB_dequeue(TCB_t *aqueue)
     return first;
 }
 
-//Adiciona um TCB no fim da fila. Retorno: 0=sucesso, -1=erro (possÃ­vel erro: o TCB jÃ¡ existe na fila)
+//Adiciona um TCB no fim da fila. Retorno: 0=sucesso, -1=erro (possível erro: o TCB já existe na fila)
 int TCB_enqueue(TCB_t *aqueue, TCB_t *TCB)
 {
     TCB_t *current;
@@ -154,10 +146,10 @@ int TCB_enqueue(TCB_t *aqueue, TCB_t *TCB)
         aqueue=TCB;
         return 0;
     }
-    else //Fila nÃ£o vazia
+    else //Fila não vazia
     {
         current=aqueue;
-        while(current->next != NULL) //Verifica se algum TCB com aquele tid jÃ¡ existe na fila
+        while(current->next != NULL) //Verifica se algum TCB com aquele tid já existe na fila
         {
             if(current->tid == TCB->tid)
                 return -1;
@@ -168,7 +160,7 @@ int TCB_enqueue(TCB_t *aqueue, TCB_t *TCB)
     }
 }
 
-//Remove um TCB da lista (ele pode estar em qualquer posiÃ§Ã£o). Retorno: TCB=TCB removido da lista, NULL=caso o TCB nÃ£o esteja na fila ou ela esteja vazia
+//Remove um TCB da lista (ele pode estar em qualquer posição). Retorno: TCB=TCB removido da lista, NULL=caso o TCB não esteja na fila ou ela esteja vazia
 TCB_t* TCB_remove(TCB_t *aqueue, int tid)
 {
     TCB_t *current, *prev;
@@ -177,7 +169,7 @@ TCB_t* TCB_remove(TCB_t *aqueue, int tid)
 
     if(current==NULL)//Fila vazia
         return NULL;
-    else //Fila nÃ£o vazia
+    else //Fila não vazia
     {
         while(current != NULL)
         {
@@ -193,7 +185,7 @@ TCB_t* TCB_remove(TCB_t *aqueue, int tid)
     return NULL;
 }
 
-//FunÃ§Ã£o que adiciona um TCB na sua fila de prioridades. Retorno: 0=sucesso, -1=erro
+//Função que adiciona um TCB na sua fila de prioridades. Retorno: 0=sucesso, -1=erro
 int add_prioQ (TCB_t *TCB)
 {
     //prioridade alta
@@ -214,7 +206,7 @@ int add_prioQ (TCB_t *TCB)
     return -1;
 }
 
-//Procura um thread ID nas filas de proridades. Retorno 0=achou, -1=nÃ£o achou
+//Procura um thread ID nas filas de proridades. Retorno 0=achou, -1=não achou
 int search_prioQs(int tid)
 {
     if(TCB_contains(prio0, tid) == 0 || TCB_contains(prio1, tid) == 0 || TCB_contains(prio2, tid) == 0)
@@ -223,7 +215,7 @@ int search_prioQs(int tid)
         return -1;
 }
 
-//Pega o primeiro TCB da fila de maior prioridade. Retorno: TCB:sucesso, NULL=todas as filas de prioridades estÃ£o vazias.
+//Pega o primeiro TCB da fila de maior prioridade. Retorno: TCB:sucesso, NULL=todas as filas de prioridades estão vazias.
 TCB_t* mfifo()
 {
     if(prio0 != NULL)
@@ -237,7 +229,7 @@ TCB_t* mfifo()
 }
 
 
-//FUNÃ‡Ã•ES BÃSICAS PEDIDAS NA ESPECIFICAÃ‡ÃƒO DO TRABALHO
+//FUNÇÕES BÁSICAS PEDIDAS NA ESPECIFICAÇÃO DO TRABALHO
 
 //Criar main thread
 int mmain()
@@ -245,12 +237,12 @@ int mmain()
     //Criar o TCB da main
     TCB_t* TCB = (TCB_t*)  malloc(sizeof(TCB_t));
 
-    //inicializaÃ§Ã£o do TCB da thread main
+    //inicialização do TCB da thread main
     TCB->tid=0;
     TCB->state=0;
     TCB->prio=0;
 
-    if(getcontext(&TCB->context)==-1) //se ocorrer erro na obtenÃ§Ã£o do contexto
+    if(getcontext(&TCB->context)==-1) //se ocorrer erro na obtenção do contexto
     {
         free(TCB);
         return -1;
@@ -259,7 +251,7 @@ int mmain()
     TCB->next=NULL;
     TCB->prev=NULL;
 
-    //atualiza os IDs disponÃ­veis, para sinalizar que a main thread jÃ¡ foi criada.
+    //atualiza os IDs disponíveis, para sinalizar que a main thread já foi criada.
     ctid++;
 
     //atualiza o estado para executando
@@ -272,22 +264,22 @@ int mmain()
         return -1;
 }
 
-/*CriaÃ§ao de uma thread*/
+/*Criaçao de uma thread*/
 int mcreate(int prio, void *(*start)(void *), void *arg)
 {
-    /*Teste se a prioridade Ã© vÃ¡lida, caso nÃ£o seja, retorna -1*/
+    /*Teste se a prioridade é válida, caso não seja, retorna -1*/
     if(prio != 0 && prio != 1 && prio != 2)
         return -1;
 
-    //Testa se a biblioteca jÃ¡ foi inicializada (primeira chamada)
+    //Testa se a biblioteca já foi inicializada (primeira chamada)
     if (lib_init==FALSE)
-        if(mthread_init() == -1) //Testa se a inicializaÃ§Ã£o da biblioteca ocorreu corretamente
+        if(mthread_init() == -1) //Testa se a inicialização da biblioteca ocorreu corretamente
             return -1;
 
-    /*AlocaÃ§Ã£o do TCB*/
+    /*Alocação do TCB*/
     TCB_t* TCB = (TCB_t*)  malloc(sizeof(TCB_t));
 
-    //AlocaÃ§Ã£o do espaÃ§o de contexto do tcb e preenchimento com o contexto.
+    //Alocação do espaço de contexto do tcb e preenchimento com o contexto.
     TCB->context = (ucontext_t*) malloc(sizeof(ucontext_t));
     //Salva o contexto para linkar no retorno.
 	getcontext(&retfunction);
@@ -302,9 +294,9 @@ int mcreate(int prio, void *(*start)(void *), void *arg)
 	retcontext.uc_link = retfunction;
 	//make context
 	makecontext(&retcontext, (void(*)(void))start, 1, arg);
-    /*InicializaÃ§Ã£o do TCB*/
+    /*Inicialização do TCB*/
     TCB->tid = ctid;
-    TCB->state = 1; //Thread Ã© criada no estado apto
+    TCB->state = 1; //Thread é criada no estado apto
     TCB->prio = prio;
     TCB->prev = NULL;
     TCB->next = NULL;
@@ -314,7 +306,7 @@ int mcreate(int prio, void *(*start)(void *), void *arg)
     //atualiza o ctid
     ctid++;
 
-    /*InclusÃ£o do TCB na fila adequada*/
+    /*Inclusão do TCB na fila adequada*/
     add_prioQ(TCB);
 
 
@@ -322,12 +314,12 @@ int mcreate(int prio, void *(*start)(void *), void *arg)
     return TCB->tid;
 }
 
-/*LiberaÃ§ao voluntaria da CPU*/
+/*Liberaçao voluntaria da CPU*/
 int myield(void)
 {
-    //testa se a main thread ainda nÃ£o foi criada, cria se for o caso e retorna -1 caso haja problemas na criaÃ§Ã£o da mesma
+    //testa se a main thread ainda não foi criada, cria se for o caso e retorna -1 caso haja problemas na criação da mesma
     if (ctid==0)
-        if(mmain()==-1) //testa se a crianÃ§Ã£o da main ocorreu corretamente
+        if(mmain()==-1) //testa se a crianção da main ocorreu corretamente
             return -1;
 
     //muda o estado da thread para apto
@@ -336,7 +328,7 @@ int myield(void)
     //pega o context e adiciona na fila de prioridades correspondente, ao mesmo tempo que testa pra ver se isso ocorreu com sucesso
     if(getcontext(&executing_thread->context)==0 && add_prioQ(executing_thread)==0)
     {
-        //livra o executing thread do TCB que estava lÃ¡ antes da chamada de myield
+        //livra o executing thread do TCB que estava lá antes da chamada de myield
         executing_thread=NULL;
 
         //--------------
@@ -349,17 +341,17 @@ int myield(void)
         return -1;
 }
 
-/*SicrinizaÃ§ao de termino*/
+/*Sicrinizaçao de termino*/
 int mwait(int tid)
 {
-    //checa se o tid nÃ£o Ã© do prÃ³prio processo
+    //checa se o tid não é do próprio processo
     if(tid == executing_thread->tid)
         return -1;
 
-    //verifica se o nÃºmero do tid Ã© vÃ¡lido
+    //verifica se o número do tid é válido
     if(tid >= 0 && tid <= ctid)
     {
-        //verifica se o jÃ¡ nÃ£o estÃ¡ sendo esperado por outro processo
+        //verifica se o já não está sendo esperado por outro processo
         if(WAIT_contains(tid)==0)
         {
             //verifica se o processo existe na fila de aptos
@@ -374,11 +366,11 @@ int mwait(int tid)
                 wthread->waited=tid;
                 wthread->waiting=executing_thread;
 
-                //adiciona o thrad id Ã  lista de threads sendo esperadas
+                //adiciona o thrad id à lista de threads sendo esperadas
                 if(WAIT_add(wthread) != 0)
                     return -1;
 
-                //libera a thread em execuÃ§Ã£o
+                //libera a thread em execução
                 executing_thread=NULL;
 
                 //--------------
@@ -387,13 +379,13 @@ int mwait(int tid)
 
                 return 0;
             }
-            else //thread a ser esperada nÃ£o foi encontrada em nenyma fila
+            else //thread a ser esperada não foi encontrada em nenyma fila
                 return -1;
         }
-        else //thread jÃ¡ estÃ¡ sendo esperada por outra thread
+        else //thread já está sendo esperada por outra thread
             return -1;
     }
-    else //tid invÃ¡lido
+    else //tid inválido
         return -1;
 
 }
@@ -401,31 +393,31 @@ int mwait(int tid)
 /*Exclusao mutua*/
 int mmutex_init (mmutex_t *mtx)
 {
-    //testa se a main thread ainda nÃ£o foi criada, cria se for o caso e retorna -1 caso haja problemas na criaÃ§Ã£o da mesma
+    //testa se a main thread ainda não foi criada, cria se for o caso e retorna -1 caso haja problemas na criação da mesma
     if (ctid==0)
-        if(mmain()==-1) //testa se a crianÃ§Ã£o da main ocorreu corretamente
+        if(mmain()==-1) //testa se a crianção da main ocorreu corretamente
             return -1;
 }
 
-/*Entrada na seÃ§ao critica*/
+/*Entrada na seçao critica*/
 int mlock (mmutex_t *mtx)
 {
-    //testa se a main thread ainda nÃ£o foi criada, cria se for o caso e retorna -1 caso haja problemas na criaÃ§Ã£o da mesma
+    //testa se a main thread ainda não foi criada, cria se for o caso e retorna -1 caso haja problemas na criação da mesma
     if (ctid==0)
-        if(mmain()==-1) //testa se a crianÃ§Ã£o da main ocorreu corretamente
+        if(mmain()==-1) //testa se a crianção da main ocorreu corretamente
             return -1;
 }
 
-/*Termino da execuÃ§ao da seÃ§ao critica*/
+/*Termino da execuçao da seçao critica*/
 int munlock (mmutex_t *mtx)
 {
-    //testa se a main thread ainda nÃ£o foi criada, cria se for o caso e retorna -1 caso haja problemas na criaÃ§Ã£o da mesma
+    //testa se a main thread ainda não foi criada, cria se for o caso e retorna -1 caso haja problemas na criação da mesma
     if (ctid==0)
-        if(mmain()==-1) //testa se a crianÃ§Ã£o da main ocorreu corretamente
+        if(mmain()==-1) //testa se a crianção da main ocorreu corretamente
             return -1;
 }
 
-//FUNÃ‡Ã•ES DE CONTROLE DA BIBLIOTECA MTHREAD
+//FUNÇÕES DE CONTROLE DA BIBLIOTECA MTHREAD
 int create_final_context ()
 {
 
@@ -439,29 +431,40 @@ int mthread_init()
 lib_init=TRUE;
 }
 
-//funÃ§Ã£o que controla a execuÃ§Ã£o das threads de acordo com as filas e estados, nao sei se Ã© necessaria :s
+//função que controla a execução das threads de acordo com as filas e estados, nao sei se é necessaria :s
 int mdispatcher ()
 {
-    while(1)
-    {
-        //usa a funÃ§Ã£o fifo para saber qual thread executar
-
-        //executa a thread
-
-        //recebe o resultado: block ou termino
-
-        //se for termino consulta a lista de bloqueadas para ver se alguma thread esperava aquele termino, se sim, move para a fila de aptos
+        TCB_t* TCB;
 
 
-        //sÃ³ vai retornar quando todas threads forem finalizadas e as filas estiverem todas vazias!!!
-        if(prio0==NULL && prio1==NULL && prio2==NULL) //talvez falte testar pra ver se nÃ£o tem nenhum processo bloqueado
-            return 0;
-    }
+        if(executing_thread->state==4)//Estado de término
+        {
+            WAIT_remove(executing_thread->tid);
+            free(executing_thread);
+            TCB=mfifo();
+            if(TCB!=NULL)
+                setcontext(TCB->context);
+        }
+        else if (executing_thread->state==3)//Estado bloqueado
+        {
+            TCB_enqueue(blocked_threads, executing_thread);
+            TCB = mfifo();
+            if(TCB!=NULL)
+                swapcontext(executing_thread->context, TCB->context);
+        }
+        else if(executing_thread->state==2)//Estado executando
+        {
+            executing_thread->state=1;
+            add_prioQ(executing_thread);
+            TCB = mfifo();
+            if(TCB!=NULL)
+                swapcontext(executing_thread->context, TCB->context);
+        }
 
 
 }
 
-//Set o contexto do TCB como 4=TÃ©rmino
+//Set o contexto do TCB como 4=Término
 void set_ended ()
 {
     executing_thread->state = 4;
