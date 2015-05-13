@@ -2,13 +2,7 @@
 #include <stdlib.h>
 #include "../include/mthread.h"
 
-/*
 
-Este teste demonstra como é possível criar um número "infinito" de threads, até que a memória fique cheia.
-Ao chamar o programa é passado um argumento arg do tipo inteiro que cria um número 'arg' de threads. Se nada
-for informado, o número default de threads criadas é 20.
-
-*/
 void doSomething(void *arg)
 {
 
