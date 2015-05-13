@@ -14,7 +14,7 @@ typedef struct mutex {
 	struct TCB	*first, *last; 	// ponteiros para lista de threads bloqueadas no mutex
 } mmutex_t;
 
-int mcreate (int prio, (void*) (*start)(void*), void *arg);
+int mcreate (int prio, void* (*start)(void*), void *arg);
 int myield(void);
 int mwait(int tid);
 int mmutex_init(mmutex_t *mtx);

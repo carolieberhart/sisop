@@ -36,13 +36,15 @@ typedef struct WAIT
 
 int WAIT_contains(int tid);
 int WAIT_remove(int tid);
-int WAIT_add(WAIT_t *WAIT);
-int TCB_contains(TCB_t *aqueue, int tid);
-TCB_t* TCB_dequeue(TCB_t *aqueue);
-int TCB_enqueue(TCB_t *aqueue, TCB_t *TCB);
-TCB_t* TCB_remove(TCB_t *aqueue, int tid);
-int add_prioQ (TCB_t *TCB);
+int WAIT_add(WAIT_t* WAIT);
+int TCB_contains(int prior, int tid);
+TCB_t* TCB_dequeue(int prior);
+int TCB_enqueue(int prior, TCB_t* TCB);
+TCB_t* TCB_remove(int prior, int tid);
+int add_prioQ (TCB_t* TCB);
 int search_prioQs(int tid);
 TCB_t* mfifo();
+void set_ended();
+void mdispatcher();
 
 #endif
