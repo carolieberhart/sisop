@@ -15,8 +15,7 @@ void doSomething(void *arg)
 int main(int arg, char **argcv){
 
 	int nT=10;
-		//if(arg > 0)
-		//	nT=arg;
+		
 
 	int *threads = (int*)malloc(nT*sizeof(int));
 	int i;
